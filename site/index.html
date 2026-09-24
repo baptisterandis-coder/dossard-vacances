@@ -130,6 +130,17 @@ input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid 
 .empty,.state{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:24px;color:var(--muted);text-align:center}
 .summary{font-size:15px}
 .summary b{font-family:var(--mono)}
+/* map */
+.map-wrap{display:flex;flex-direction:column;gap:8px}
+.map-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.map-head h2{font-family:var(--display);font-weight:700;font-size:28px;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.map-head p{margin:0;font-size:12px;color:var(--muted)}
+#map{height:clamp(320px,55vh,520px);border:1px solid var(--line);border-radius:10px;background:var(--surface);z-index:0}
+.leaflet-popup-content{font-family:var(--body);font-size:13px;line-height:1.4;margin:10px 12px}
+.leaflet-popup-content b{font-size:14px}
+.leaflet-popup-content .pp-meta{color:#5B6961;margin:2px 0 6px}
+.leaflet-popup-content .pp-act{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.leaflet-popup-content button{font:inherit;font-weight:700;border:0;border-radius:999px;background:#2346D1;color:#fff;padding:5px 12px;cursor:pointer}
 footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:4px}
 
 /* compact sticky bar, Ryanair-style */
@@ -165,6 +176,9 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
 @media (prefers-reduced-motion:no-preference){.race{transition:border-color .15s}.race:hover{border-color:var(--muted)}}
 </style>
 <style>body{margin:0}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+<script src="map.js" defer></script>
 </head>
 <body>
 
@@ -256,6 +270,11 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
       <div class="strip-scroll" id="stripScroll"><div class="strip" id="strip"></div></div>
       <button type="button" class="strip-arrow next" id="scrollNext" aria-label="Jours suivants">›</button>
     </div>
+  </section>
+
+  <section class="map-wrap" aria-label="Carte des courses">
+    <div class="map-head"><h2>Sur la carte</h2><p>Toutes les courses de ta fenêtre de dates en France · clique sur la carte pour chercher autour d'un point</p></div>
+    <div id="map"></div>
   </section>
 
   <p class="summary" id="summary"></p>
@@ -353,6 +372,17 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
     return m;
   };
   let CITIES = new Map();
+  window.dvApi = {
+    setCenter(lat, lon){
+      const nom = "ton point sur la carte";
+      state.center = {nom, lat, lon}; state.where = nom; state.day = null;
+      $("#where").value = nom; update();
+    },
+    setWhere(nom){ state.where = nom; state.day = null; $("#where").value = nom; update(); },
+    fmtDate(d){ return JOURS[d.getUTCDay()]+" "+d.getUTCDate()+" "+MOIS[d.getUTCMonth()]; },
+    fmtDist, esc,
+    ready(){ if (RACES.length) update(); }
+  };
 
   const distOk = r => {
     if (state.dist==="all" || r.type==="multi") return true;
@@ -366,15 +396,19 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
   let lastWindowKey = "";
   function update(){
     save();
-    const ref = CITIES.get(norm(state.where));
+    const ref = CITIES.get(norm(state.where)) || (state.center && state.where === state.center.nom ? state.center : null);
     const d1 = toD(state.d1), d2 = toD(state.d2);
     const w1 = addDays(d1,-state.flex), w2 = addDays(d2,state.flex);
     const s1 = addDays(w1,-CTX_BEFORE), s2 = addDays(w2,CTX_AFTER);
-    const zone = [];
+    const zone = [], mapItems = [], dayD = state.day ? toD(state.day) : null;
     for (const r of RACES){
       if (!state.types.has(r.type)) continue;
       const rs = toD(r.debut), re = toD(r.fin||r.debut);
       if (re < s1 || rs > s2) continue;
+      if (r.lat!=null && !r.annule && distOk(r) && (dayD ? (rs<=dayD && re>=dayD) : !(re < w1 || rs > w2))){
+        let sh = 0; if (re < d1) sh = diffDays(re,d1); else if (rs > d2) sh = diffDays(rs,d2);
+        mapItems.push({...r, rs, re, shift: sh, dkm: ref ? km(ref, r) : null});
+      }
       let dkm = null;
       if (ref){ if (r.lat==null) continue; dkm = km(ref, r); if (dkm > state.radius) continue; }
       else if (state.where.trim()){ const q=norm(state.where); if (!norm(r.ville).includes(q) && !norm(r.nom).includes(q) && r.dep!==q.padStart(3,"0")) continue; }
@@ -386,6 +420,7 @@ footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);paddin
     zone.sort((a,b)=> a.rs-b.rs || (a.dkm??0)-(b.dkm??0));
     const hits = zone.filter(h => h.inWin);
     renderStrip(zone, d1, d2, w1, w2, s1, s2);
+    if (window.dvMap) window.dvMap.render({items: mapItems, ref, radius: state.radius});
     renderMini(hits.filter(h=>!h.annule).length);
     renderResults(hits, zone, ref);
   }
