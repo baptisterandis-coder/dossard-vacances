@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="Trouve les courses à pied, trails, cross et triathlons autour de ton lieu de vacances, pendant ton séjour ou à quelques jours près.">
+<title>Dossard Vacances</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;900&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  --bg:#F2F4EF; --surface:#FFFFFF; --ink:#15201B; --muted:#5B6961; --line:#D6DDD5;
+  --accent:#2346D1; --accent-ink:#FFFFFF; --flex:#F2C230; --flex-soft:#FBEFC2;
+  --stay-soft:#DDE4FB; --cancel:#B8322A;
+  --t-route:#2346D1; --t-trail:#2E7D4F; --t-cross:#8A5A2B; --t-marche:#7A4FB5; --t-multi:#0E7C86;
+  --display:"Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0F1512; --surface:#18201C; --ink:#E7EDE8; --muted:#9AA79F; --line:#2B3630;
+    --accent:#8AA2FF; --accent-ink:#0F1512; --flex:#E3B83E; --flex-soft:#3A3219;
+    --stay-soft:#1F2A4D; --cancel:#F07A70;
+    --t-route:#8AA2FF; --t-trail:#6CC894; --t-cross:#D39B62; --t-marche:#B99AF0; --t-multi:#5CC9D2;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0F1512; --surface:#18201C; --ink:#E7EDE8; --muted:#9AA79F; --line:#2B3630;
+  --accent:#8AA2FF; --accent-ink:#0F1512; --flex:#E3B83E; --flex-soft:#3A3219;
+  --stay-soft:#1F2A4D; --cancel:#F07A70;
+  --t-route:#8AA2FF; --t-trail:#6CC894; --t-cross:#D39B62; --t-marche:#B99AF0; --t-multi:#5CC9D2;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:20px;padding-block:28px 60px;display:flex;flex-direction:column;gap:24px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(40px,7vw,64px);line-height:.9;margin:0;letter-spacing:.5px;text-transform:uppercase}
+h1 .bib{display:inline-block;background:var(--surface);border:2px solid var(--ink);padding:2px 12px 0;margin-left:6px;border-radius:6px;font-family:var(--mono);font-size:.42em;vertical-align:middle;letter-spacing:0}
+.sub{color:var(--muted);max-width:60ch;margin:6px 0 0}
+.meta{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:right}
+
+/* search panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;grid-template-columns:repeat(12,1fr);gap:14px 16px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.f-where{grid-column:span 4}.f-radius{grid-column:span 3}.f-d1,.f-d2{grid-column:span 2}.f-flex{grid-column:span 1}
+.f-types{grid-column:span 7}.f-dist{grid-column:span 5}
+input[type=text],input[type=date],select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-row input{flex:1;accent-color:var(--accent)}
+.range-row output{font-family:var(--mono);font-size:13px;min-width:5ch;text-align:right}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:6px;background:var(--bg);overflow:hidden}
+.stepper button{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:700;width:30px;height:38px;cursor:pointer}
+.stepper button:hover{background:var(--flex-soft)}
+.stepper output{flex:1;text-align:center;font-family:var(--mono);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* strip */
+.strip-wrap{display:flex;flex-direction:column;gap:10px}
+.strip-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px}
+.strip-head h2{font-family:var(--display);font-weight:700;font-size:28px;margin:0;text-transform:uppercase;letter-spacing:.5px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:10px;border-radius:2px;display:inline-block}
+.sw.stay{background:var(--stay-soft);border:1px solid var(--accent)}
+.sw.flex{background:repeating-linear-gradient(135deg,var(--flex-soft) 0 4px,var(--surface) 4px 8px);border:1px solid var(--flex)}
+.strip-scroll{overflow-x:auto;padding-bottom:4px}
+.strip{display:grid;grid-auto-flow:column;grid-auto-columns:58px;gap:4px;width:max-content}
+.day{border:1px solid var(--line);border-radius:6px;padding:6px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--surface);cursor:pointer;font:inherit;color:var(--ink)}
+.day.stay{background:var(--stay-soft);border-color:var(--accent)}
+.day.flex{background:repeating-linear-gradient(135deg,var(--flex-soft) 0 5px,var(--surface) 5px 10px);border-color:var(--flex)}
+.day.sel{outline:2px solid var(--ink);outline-offset:1px}
+.day.out{background:var(--bg);border-style:dashed}
+.day.out .dn,.day.out .cnt b{opacity:.75}
+.day.m1{box-shadow:inset 3px 0 0 var(--muted)}
+.sw.out{background:var(--bg);border:1px dashed var(--muted)}
+.strip-frame{position:relative;display:flex;align-items:stretch;gap:6px}
+.strip-frame .strip-scroll{flex:1;min-width:0;scroll-snap-type:x proximity;scrollbar-width:thin}
+.strip .day{scroll-snap-align:start}
+.strip-arrow{flex:none;width:34px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-size:20px;font-weight:700;cursor:pointer}
+.strip-arrow:hover:not(:disabled){border-color:var(--ink)}
+.strip-arrow:disabled{opacity:.35;cursor:default}
+.shift-stay{display:flex;align-items:center;gap:6px}
+.shift-stay .lbl{margin-right:4px}
+.shift-stay button{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 12px;cursor:pointer;font-family:var(--mono)}
+.shift-stay button:hover{background:var(--flex-soft);border-color:var(--flex)}
+@media (max-width:560px){.strip-arrow{display:none}}
+.day .dow{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.day .dn{font-family:var(--mono);font-weight:700;font-size:18px;line-height:1}
+.day .mo{font-size:10px;color:var(--muted)}
+.day .cnt{font-family:var(--mono);font-size:12px;font-weight:700;min-height:18px}
+.day .cnt b{display:inline-block;min-width:22px;padding:1px 6px;border-radius:999px;background:var(--ink);color:var(--bg)}
+.day .cnt i{font-style:normal;color:var(--muted);font-weight:500}
+
+/* results */
+.group{display:flex;flex-direction:column;gap:10px}
+.group h3{margin:6px 0 0;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.group h3::after{content:"";flex:1;height:1px;background:var(--line)}
+.race{display:grid;grid-template-columns:92px 1fr auto;gap:14px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.race.flexed{border-left:4px solid var(--flex)}
+.race .when{font-family:var(--mono);display:flex;flex-direction:column;gap:2px}
+.race .when .d{font-size:22px;font-weight:700;line-height:1}
+.race .when .m{font-size:12px;color:var(--muted);text-transform:uppercase}
+.race .when .shift{margin-top:6px;font-size:11px;font-weight:700;background:var(--flex);color:#2A2106;border-radius:4px;padding:2px 6px;align-self:flex-start}
+.race .name{font-weight:700;font-size:16px;line-height:1.3;text-wrap:balance;margin:0}
+.race .where{color:var(--muted);font-size:13px;margin:2px 0 8px}
+.race .dists{display:flex;flex-wrap:wrap;gap:6px}
+.dist{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 7px;background:var(--bg)}
+.dist small{color:var(--muted)}
+.dist .eur{font-weight:700;color:var(--t-trail);margin-left:2px}
+.race .from{font-size:13px;color:var(--muted);white-space:nowrap}
+.race .from b{font-family:var(--mono);color:var(--ink);font-size:15px}
+.race .side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-size:13px}
+.pill{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;border:1px solid currentColor}
+.pill.route{color:var(--t-route)}.pill.trail{color:var(--t-trail)}.pill.cross{color:var(--t-cross)}.pill.marche{color:var(--t-marche)}.pill.multi{color:var(--t-multi)}
+.pill.cancel{color:var(--cancel)}
+.race.cancelled .name{text-decoration:line-through;color:var(--muted)}
+.race a{color:var(--accent);font-weight:600;text-decoration:none}
+.race a:hover{text-decoration:underline}
+.links{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.empty,.state{background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:24px;color:var(--muted);text-align:center}
+.summary{font-size:15px}
+.summary b{font-family:var(--mono)}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:4px}
+
+/* compact sticky bar, Ryanair-style */
+.minibar{position:fixed;top:0;left:0;right:0;z-index:20;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 8px;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 4px 18px rgba(20,30,25,.10);transform:translateY(-110%);visibility:hidden;transition:transform .22s ease, visibility 0s linear .22s}
+.minibar.show{transform:none;visibility:visible;transition:transform .22s ease, visibility 0s}
+.minibar .in{max-width:1040px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.mini-brand{font-family:var(--display);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.mini-sum{flex:1;min-width:0;display:flex;gap:8px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;font:inherit;color:var(--ink);cursor:pointer}
+.mini-sum span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-sum .sep{color:var(--muted)}
+.mini-sum b{font-family:var(--mono)}
+.mini-sum:hover{border-color:var(--muted)}
+.mini-flex{display:flex;align-items:center;border:1px solid var(--line);border-radius:999px;background:var(--bg);overflow:hidden}
+.mini-flex button{border:0;background:transparent;color:var(--ink);font:inherit;font-weight:700;width:30px;height:34px;cursor:pointer}
+.mini-flex button:hover{background:var(--flex-soft)}
+.mini-flex output{font-family:var(--mono);font-size:13px;font-weight:700;padding:0 4px;white-space:nowrap}
+.mini-edit{background:var(--accent);color:var(--accent-ink);border:0;border-radius:999px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.panel.floating{position:fixed;top:var(--barH,58px);left:50%;transform:translateX(-50%);width:min(1040px,calc(100% - 32px));z-index:19;box-shadow:0 18px 44px rgba(20,30,25,.22);max-height:calc(100% - var(--barH,58px) - 16px);overflow:auto}
+.mini-sum span{flex:none}
+.mini-sum span:first-child{flex:0 1 auto;min-width:0}
+@media (max-width:560px){.mini-brand,.mini-edit{display:none}.mini-sum .opt{display:none}}
+@media (prefers-reduced-motion:reduce){.minibar,.minibar.show{transition:none}}
+@media (max-width:820px){
+  .f-where,.f-radius,.f-types,.f-dist{grid-column:span 12}
+  .f-d1,.f-d2{grid-column:span 5}.f-flex{grid-column:span 2}
+}
+@media (max-width:560px){
+  .f-d1,.f-d2{grid-column:span 6}.f-flex{grid-column:span 12}
+  .race{grid-template-columns:64px 1fr}
+  .race .side{grid-column:1 / -1;flex-direction:row;justify-content:space-between;align-items:center}
+  .meta{text-align:left}
+}
+@media (prefers-reduced-motion:no-preference){.race{transition:border-color .15s}.race:hover{border-color:var(--muted)}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Dossard Vacances <span class="bib" id="bibCount">—</span></h1>
+      <p class="sub">Choisis où et quand tu pars. Tu vois les courses et les triathlons pendant ton séjour et celles qui tombent juste avant ou juste après, si tu peux décaler de quelques jours.</p>
+    </div>
+    <div class="meta" id="meta">Chargement de la base…</div>
+  </header>
+
+  <div class="minibar" id="minibar" aria-hidden="true">
+    <div class="in">
+      <span class="mini-brand">Dossard</span>
+      <button type="button" class="mini-sum" id="miniSum" aria-label="Modifier la recherche"></button>
+      <div class="mini-flex" role="group" aria-label="Flexibilité">
+        <button type="button" id="miniMinus" aria-label="Moins de flexibilité">−</button>
+        <output id="miniFlex">±2 j</output>
+        <button type="button" id="miniPlus" aria-label="Plus de flexibilité">+</button>
+      </div>
+      <button type="button" class="mini-edit" id="miniEdit">Modifier</button>
+    </div>
+  </div>
+
+  <form class="panel" id="search" autocomplete="off">
+    <div class="field f-where">
+      <label for="where">Autour de</label>
+      <input type="text" id="where" list="cities" placeholder="Ville (ex. Lille)">
+      <datalist id="cities"></datalist>
+    </div>
+    <div class="field f-radius">
+      <label for="radius">Rayon</label>
+      <div class="range-row"><input type="range" id="radius" min="5" max="200" step="5" value="40"><output id="radiusOut" for="radius">40 km</output></div>
+    </div>
+    <div class="field f-d1">
+      <label for="d1">Arrivée</label>
+      <input type="date" id="d1">
+    </div>
+    <div class="field f-d2">
+      <label for="d2">Départ</label>
+      <input type="date" id="d2">
+    </div>
+    <div class="field f-flex">
+      <span class="lbl" id="flexLbl">± jours</span>
+      <div class="stepper" role="group" aria-labelledby="flexLbl">
+        <button type="button" id="flexMinus" aria-label="Moins de flexibilité">−</button>
+        <output id="flexOut">2</output>
+        <button type="button" id="flexPlus" aria-label="Plus de flexibilité">+</button>
+      </div>
+    </div>
+    <div class="field f-types">
+      <span class="lbl">Type de course</span>
+      <div class="chips" id="types">
+        <button type="button" class="chip" data-t="route" aria-pressed="true"><span class="dot" style="background:var(--t-route)"></span>Route</button>
+        <button type="button" class="chip" data-t="trail" aria-pressed="true"><span class="dot" style="background:var(--t-trail)"></span>Trail</button>
+        <button type="button" class="chip" data-t="cross" aria-pressed="true"><span class="dot" style="background:var(--t-cross)"></span>Cross</button>
+        <button type="button" class="chip" data-t="multi" aria-pressed="true"><span class="dot" style="background:var(--t-multi)"></span>Triathlon &amp; multisport</button>
+        <button type="button" class="chip" data-t="marche" aria-pressed="false"><span class="dot" style="background:var(--t-marche)"></span>Marche</button>
+      </div>
+    </div>
+    <div class="field f-dist">
+      <span class="lbl">Distance</span>
+      <div class="chips" id="dists">
+        <button type="button" class="chip" data-d="all" aria-pressed="true">Toutes</button>
+        <button type="button" class="chip" data-d="s" aria-pressed="false">≤ 10 km</button>
+        <button type="button" class="chip" data-d="m" aria-pressed="false">10–21 km</button>
+        <button type="button" class="chip" data-d="l" aria-pressed="false">21–42 km</button>
+        <button type="button" class="chip" data-d="xl" aria-pressed="false">42 km +</button>
+      </div>
+    </div>
+  </form>
+  <div id="panelSpacer" hidden></div>
+  <div id="panelEnd" aria-hidden="true"></div>
+
+  <section class="strip-wrap" aria-label="Ton séjour">
+    <div class="strip-head">
+      <h2>Ton séjour</h2>
+      <div class="shift-stay" role="group" aria-label="Décaler tout le séjour">
+        <span class="lbl">Décaler le séjour</span>
+        <button type="button" id="stayPrev" aria-label="Décaler le séjour d'un jour plus tôt">‹ 1 j</button>
+        <button type="button" id="stayNext" aria-label="Décaler le séjour d'un jour plus tard">1 j ›</button>
+      </div>
+    </div>
+    <div class="legend"><span><i class="sw stay"></i>Pendant tes dates</span><span><i class="sw flex"></i>En décalant</span><span><i class="sw out"></i>Hors fenêtre</span><span>Fais défiler pour voir avant et après · clique un jour pour filtrer</span></div>
+    <div class="strip-frame">
+      <button type="button" class="strip-arrow prev" id="scrollPrev" aria-label="Jours précédents">‹</button>
+      <div class="strip-scroll" id="stripScroll"><div class="strip" id="strip"></div></div>
+      <button type="button" class="strip-arrow next" id="scrollNext" aria-label="Jours suivants">›</button>
+    </div>
+  </section>
+
+  <p class="summary" id="summary"></p>
+  <section id="results"></section>
+
+  <footer>
+    <span id="foot">Sources : calendriers officiels FFA (athle.fr) et FFTri.</span>
+    <span>Prix d'inscription déclarés à la FFA par les organisateurs, hors frais et hors tarifs sur place. Vérifie toujours la date, le prix et les inscriptions sur le site de l'organisateur avant de réserver.</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const MOIS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+  const JOURS = ["dim","lun","mar","mer","jeu","ven","sam"];
+  const TYPE_LABEL = {route:"Route",trail:"Trail",cross:"Cross",marche:"Marche",multi:"Multisport"};
+  let RACES = [];
+  let META = null;
+  const plus = n => new Date(Date.now()+n*864e5).toISOString().slice(0,10);
+  const state = { where:"Lille", radius:40, d1:plus(21), d2:plus(28), flex:2,
+                  types:new Set(["route","trail","cross","multi"]), dist:"all", day:null };
+
+  // restore per-viewer convenience
+  try { const s = JSON.parse(localStorage.getItem("dv-search2")||"null");
+    if (s) { Object.assign(state, s, {types:new Set(s.types||["route","trail","cross","multi"]), day:null}); } } catch(e){}
+  const save = () => { try { localStorage.setItem("dv-search2", JSON.stringify({...state, types:[...state.types], day:null})); } catch(e){} };
+
+  const toD = s => { const [y,m,d] = s.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); };
+  const iso = d => d.toISOString().slice(0,10);
+  const addDays = (d,n) => new Date(d.getTime()+n*864e5);
+  const diffDays = (a,b) => Math.round((a-b)/864e5);
+  const norm = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[-']/g," ").replace(/\s+/g," ").trim();
+  const km = (a,b) => { const R=6371, r=x=>x*Math.PI/180; const dLa=r(b.lat-a.lat), dLo=r(b.lon-a.lon);
+    const h=Math.sin(dLa/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(h)); };
+  const esc = s => String(s??"").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const fmtEur = v => (Number.isInteger(v) ? v : v.toFixed(2).replace(".",",")) + " €";
+  const fmtDist = m => m>=1000 ? (m%1000===0 ? (m/1000)+" km" : (m/1000).toFixed(1).replace(".",",")+" km") : m+" m";
+
+  // controls
+  const bind = () => {
+    $("#where").value = state.where; $("#radius").value = state.radius; $("#d1").value = state.d1; $("#d2").value = state.d2;
+    $("#radiusOut").textContent = state.radius+" km"; $("#flexOut").textContent = state.flex;
+    document.querySelectorAll("#types .chip").forEach(b => b.setAttribute("aria-pressed", state.types.has(b.dataset.t)));
+    document.querySelectorAll("#dists .chip").forEach(b => b.setAttribute("aria-pressed", b.dataset.d===state.dist));
+  };
+  $("#search").addEventListener("submit", e => e.preventDefault());
+  $("#where").addEventListener("input", e => { state.where = e.target.value; state.day=null; update(); });
+  $("#radius").addEventListener("input", e => { state.radius = +e.target.value; $("#radiusOut").textContent = state.radius+" km"; update(); });
+  $("#d1").addEventListener("change", e => { if(!e.target.value) return; state.d1 = e.target.value; if (state.d2 < state.d1) { state.d2 = state.d1; $("#d2").value = state.d2; } state.day=null; update(); });
+  $("#d2").addEventListener("change", e => { if(!e.target.value) return; state.d2 = e.target.value; if (state.d2 < state.d1) { state.d1 = state.d2; $("#d1").value = state.d1; } state.day=null; update(); });
+  const setFlex = n => { state.flex = Math.max(0, Math.min(7, n)); $("#flexOut").textContent = state.flex; state.day=null; update(); };
+  $("#flexMinus").addEventListener("click", () => setFlex(state.flex-1));
+  $("#flexPlus").addEventListener("click", () => setFlex(state.flex+1));
+  $("#miniMinus").addEventListener("click", () => setFlex(state.flex-1));
+  $("#miniPlus").addEventListener("click", () => setFlex(state.flex+1));
+
+  // compact bar: appears once the search panel scrolls away; opens the panel as a dropdown
+  const bar = $("#minibar"), panel = $("#search"), spacer = $("#panelSpacer");
+  let floating = false;
+  const openFloat = () => {
+    if (floating) return;
+    spacer.style.height = panel.offsetHeight + "px"; spacer.hidden = false;
+    document.documentElement.style.setProperty("--barH", bar.offsetHeight + "px");
+    panel.classList.add("floating"); floating = true;
+    $("#where").focus({preventScroll:true});
+  };
+  const closeFloat = () => {
+    if (!floating) return;
+    panel.classList.remove("floating"); spacer.hidden = true; floating = false;
+  };
+  $("#miniSum").addEventListener("click", () => floating ? closeFloat() : openFloat());
+  $("#miniEdit").addEventListener("click", () => floating ? closeFloat() : openFloat());
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeFloat(); });
+  document.addEventListener("pointerdown", e => { if (floating && !panel.contains(e.target) && !bar.contains(e.target)) closeFloat(); });
+  const showBar = on => { bar.classList.toggle("show", on); bar.setAttribute("aria-hidden", on ? "false" : "true"); if (!on) closeFloat(); };
+  const sentinel = $("#panelEnd"); let barOn = false, ticking = false;
+  const checkBar = () => { ticking = false; const on = sentinel.getBoundingClientRect().top < 0; if (on !== barOn) { barOn = on; showBar(on); } };
+  addEventListener("scroll", () => { if (!ticking) { ticking = true; requestAnimationFrame(checkBar); } }, {passive:true});
+  addEventListener("resize", checkBar); checkBar();
+  const fmtShort = s => { const d = toD(s); return d.getUTCDate()+" "+MOIS[d.getUTCMonth()]; };
+  const renderMini = (n) => {
+    const w = state.where.trim() || "Partout";
+    $("#miniSum").innerHTML = `<span><b>${esc(w)}</b></span><span class="sep opt">·</span><span class="opt">${state.radius} km</span><span class="sep">·</span><span>${fmtShort(state.d1)} → ${fmtShort(state.d2)}</span><span class="sep opt">·</span><span class="opt"><b>${n}</b> course${n>1?"s":""}</span>`;
+    $("#miniFlex").textContent = "±" + state.flex + " j";
+  };
+  $("#types").addEventListener("click", e => { const b = e.target.closest(".chip"); if(!b) return;
+    const t=b.dataset.t; state.types.has(t) ? state.types.delete(t) : state.types.add(t); b.setAttribute("aria-pressed", state.types.has(t)); update(); });
+  $("#dists").addEventListener("click", e => { const b = e.target.closest(".chip"); if(!b) return;
+    state.dist = b.dataset.d; document.querySelectorAll("#dists .chip").forEach(x => x.setAttribute("aria-pressed", x===b)); update(); });
+
+  const cityIndex = () => {
+    const m = new Map();
+    RACES.forEach(r => { if (r.lat!=null) { const k = norm(r.ville); if(!m.has(k)) m.set(k,{nom:r.ville,lat:r.lat,lon:r.lon,dep:r.dep}); } });
+    return m;
+  };
+  let CITIES = new Map();
+
+  const distOk = r => {
+    if (state.dist==="all" || r.type==="multi") return true;
+    const ds = (r.epreuves||[]).map(e=>e.distance_m).filter(Boolean);
+    if (!ds.length) return false;
+    const f = {s:m=>m<=10500, m:m=>m>10500&&m<=21500, l:m=>m>21500&&m<=42500, xl:m=>m>42500}[state.dist];
+    return ds.some(f);
+  };
+
+  const CTX_BEFORE = 7, CTX_AFTER = 21;
+  let lastWindowKey = "";
+  function update(){
+    save();
+    const ref = CITIES.get(norm(state.where));
+    const d1 = toD(state.d1), d2 = toD(state.d2);
+    const w1 = addDays(d1,-state.flex), w2 = addDays(d2,state.flex);
+    const s1 = addDays(w1,-CTX_BEFORE), s2 = addDays(w2,CTX_AFTER);
+    const zone = [];
+    for (const r of RACES){
+      if (!state.types.has(r.type)) continue;
+      const rs = toD(r.debut), re = toD(r.fin||r.debut);
+      if (re < s1 || rs > s2) continue;
+      let dkm = null;
+      if (ref){ if (r.lat==null) continue; dkm = km(ref, r); if (dkm > state.radius) continue; }
+      else if (state.where.trim()){ const q=norm(state.where); if (!norm(r.ville).includes(q) && !norm(r.nom).includes(q) && r.dep!==q.padStart(3,"0")) continue; }
+      if (!distOk(r)) continue;
+      let shift = 0;
+      if (re < d1) shift = diffDays(re,d1); else if (rs > d2) shift = diffDays(rs,d2);
+      zone.push({...r, dkm, shift, rs, re, inWin: !(re < w1 || rs > w2)});
+    }
+    zone.sort((a,b)=> a.rs-b.rs || (a.dkm??0)-(b.dkm??0));
+    const hits = zone.filter(h => h.inWin);
+    renderStrip(zone, d1, d2, w1, w2, s1, s2);
+    renderMini(hits.filter(h=>!h.annule).length);
+    renderResults(hits, zone, ref);
+  }
+
+  const shiftStay = n => {
+    state.d1 = iso(addDays(toD(state.d1), n)); state.d2 = iso(addDays(toD(state.d2), n));
+    $("#d1").value = state.d1; $("#d2").value = state.d2; state.day = null; update();
+  };
+  $("#stayPrev").addEventListener("click", () => shiftStay(-1));
+  $("#stayNext").addEventListener("click", () => shiftStay(1));
+  const scroller = $("#stripScroll");
+  $("#scrollPrev").addEventListener("click", () => scroller.scrollBy({left:-scroller.clientWidth*0.8, behavior:"smooth"}));
+  $("#scrollNext").addEventListener("click", () => scroller.scrollBy({left: scroller.clientWidth*0.8, behavior:"smooth"}));
+  const syncArrows = () => {
+    $("#scrollPrev").disabled = scroller.scrollLeft <= 2;
+    $("#scrollNext").disabled = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 2;
+  };
+  scroller.addEventListener("scroll", syncArrows, {passive:true});
+
+  function renderStrip(zone, d1, d2, w1, w2, s1, s2){
+    const strip = $("#strip"); strip.innerHTML = "";
+    const n = diffDays(s2,s1)+1;
+    if (n > 120) { strip.innerHTML = `<div class="state">Séjour trop long pour la frise (${n} jours). Les résultats restent listés ci-dessous.</div>`; return; }
+    let firstWin = null;
+    for (let i=0;i<n;i++){
+      const d = addDays(s1,i), k = iso(d);
+      const inStay = d>=d1 && d<=d2, inWin = d>=w1 && d<=w2;
+      const c = zone.filter(h => h.rs<=d && h.re>=d && !h.annule).length;
+      const b = document.createElement("button");
+      b.type="button"; b.className = "day "+(inStay?"stay":inWin?"flex":"out")+(state.day===k?" sel":"")+(d.getUTCDate()===1?" m1":"");
+      b.setAttribute("aria-label", `${d.getUTCDate()} ${MOIS[d.getUTCMonth()]} : ${c} course${c>1?"s":""}`);
+      b.innerHTML = `<span class="dow">${JOURS[d.getUTCDay()]}</span><span class="dn">${d.getUTCDate()}</span><span class="mo">${MOIS[d.getUTCMonth()]}</span><span class="cnt">${c?`<b>${c}</b>`:"<i>·</i>"}</span>`;
+      b.addEventListener("click", () => { state.day = state.day===k ? null : k; update(); });
+      strip.appendChild(b);
+      if (inWin && !firstWin) firstWin = b;
+    }
+    const key = state.d1+state.d2+state.flex;
+    if (key !== lastWindowKey && firstWin){
+      lastWindowKey = key;
+      scroller.scrollLeft = Math.max(0, firstWin.offsetLeft - scroller.offsetLeft - 70);
+    }
+    syncArrows();
+  }
+
+  function card(r, ref){
+    const d = r.rs;
+    const multi = r.fin && r.fin!==r.debut;
+    const shiftTxt = r.shift<0 ? `${-r.shift} j avant l'arrivée` : r.shift>0 ? `${r.shift} j après le départ` : "";
+    const eps = (r.epreuves||[]).filter(e=>e.distance_m).sort((a,b)=>a.distance_m-b.distance_m);
+    const seen = new Set();
+    const dists = eps.filter(e => { const k=e.distance_m+"|"+(e.dplus||0); if(seen.has(k)) return false; seen.add(k); return true; })
+      .map(e => { const px = (r.prix||[]).find(x => x.distance_m===e.distance_m);
+        return `<span class="dist">${fmtDist(e.distance_m)}${e.dplus?` <small>${e.dplus} m D+</small>`:""}${px?` <b class="eur">${fmtEur(px.eur)}</b>`:""}</span>`; }).join("");
+    const minPx = (r.prix||[]).length ? Math.min(...r.prix.map(x=>x.eur)) : null;
+    const where = [r.ville, r.dep ? "("+r.dep.replace(/^0/,"")+")" : "", r.dkm!=null ? `· à ${Math.round(r.dkm)} km de ${esc(ref.nom)}` : ""].join(" ");
+    const fmts = (r.formats||[]).map(f => `<span class="dist">${esc(f)}</span>`).join("");
+    const links = [r.site ? `<a href="${esc(r.site)}" target="_blank" rel="noopener">Site officiel</a>` : "",
+                   r.lien ? `<a href="${esc(r.lien)}" target="_blank" rel="noopener">${r.source==="FFTri"?"Fiche FFTri":"Fiche FFA"}</a>` : ""].join("");
+    return `<article class="race${r.shift?" flexed":""}${r.annule?" cancelled":""}">
+      <div class="when"><span class="d">${d.getUTCDate()}${multi?"–"+r.re.getUTCDate():""}</span><span class="m">${JOURS[d.getUTCDay()]} ${MOIS[d.getUTCMonth()]}</span>${shiftTxt?`<span class="shift">${shiftTxt}</span>`:""}</div>
+      <div><p class="name">${esc(r.nom)}</p><p class="where">${esc(where)}</p><div class="dists">${fmts || dists || '<span class="dist"><small>Distances non précisées</small></span>'}</div></div>
+      <div class="side">${minPx!=null && !r.annule ? `<span class="from">dès <b>${fmtEur(minPx)}</b></span>` : ""}${r.annule?'<span class="pill cancel">Annulé</span>':`<span class="pill ${r.type}">${esc(r.discipline || TYPE_LABEL[r.type])}</span>`}<div class="links">${links}</div></div>
+    </article>`;
+  }
+
+  function renderResults(hits, zone, ref){
+    const res = $("#results");
+    if (!RACES.length){ return; }
+    let list = hits;
+    if (state.day){ const d = toD(state.day); list = zone.filter(h => h.rs<=d && h.re>=d); }
+    const active = hits.filter(h=>!h.annule);
+    const inStay = active.filter(h=>!h.shift).length, flexN = active.filter(h=>h.shift).length;
+    const zoneTxt = ref ? `à moins de ${state.radius} km de ${esc(ref.nom)}` : state.where.trim() ? `pour « ${esc(state.where)} »` : "dans toute la base";
+    $("#summary").innerHTML = `<b>${inStay}</b> course${inStay>1?"s":""} pendant ton séjour ${zoneTxt}, et <b>${flexN}</b> de plus en décalant de ${state.flex} jour${state.flex>1?"s":""}.`
+      + (state.day ? ` Filtré sur le ${toD(state.day).getUTCDate()} ${MOIS[toD(state.day).getUTCMonth()].replace(/\.$/,"")} (clique à nouveau sur le jour pour tout revoir).` : "")
+      + (!ref && state.where.trim() ? ` Cette ville n'est pas dans la base : choisis une ville proposée pour chercher par rayon.` : "");
+    if (!list.length){ res.innerHTML = `<div class="empty">${state.day ? "Aucune course ce jour-là dans cette zone." : "Aucune course sur ces dates dans cette zone. Élargis le rayon, ajoute des jours de flexibilité ou regarde les jours suivants sur la frise."}</div>`; return; }
+    if (state.day && !list.some(h=>h.inWin)){
+      const d = toD(state.day);
+      res.innerHTML = `<div class="group"><h3>Le ${JOURS[d.getUTCDay()]} ${d.getUTCDate()} ${MOIS[d.getUTCMonth()]}, hors de ta fenêtre · ${list.length}</h3>${list.map(r=>card(r,ref)).join("")}</div>`;
+      return;
+    }
+    const g1 = list.filter(h=>!h.shift), g2 = list.filter(h=>h.shift);
+    res.innerHTML = [
+      g1.length ? `<div class="group"><h3>Pendant ton séjour · ${g1.length}</h3>${g1.map(r=>card(r,ref)).join("")}</div>` : "",
+      g2.length ? `<div class="group"><h3>En décalant tes dates · ${g2.length}</h3>${g2.map(r=>card(r,ref)).join("")}</div>` : ""
+    ].join("");
+  }
+
+  function ingest(snap){
+    const all = [];
+    const T = {r:"route",t:"trail",c:"cross",m:"marche",x:"multi"};
+    snap.docs.forEach(doc => {
+      if (doc.id === "_meta") { META = doc.data(); return; }
+      const d = doc.data();
+      (d.c||[]).forEach(c => all.push({
+        id:c.id, nom:c.n, debut:c.d, fin:c.f||c.d, ville:c.v, dep:c.dp, lat:c.la, lon:c.lo,
+        type:T[c.t]||"route", annule:!!c.x, site:c.s||null,
+        lien:c.u || (c.l ? "https://www.athle.fr/competitions/"+c.l : null),
+        source:c.u ? "FFTri" : "FFA", discipline:c.dc||null, formats:c.fm||null,
+        epreuves:(c.e||[]).map(e => Array.isArray(e) ? {distance_m:e[0], dplus:e[1]} : {distance_m:e}),
+        prix:(c.p||[]).map(x => ({distance_m:x[0], eur:x[1]}))
+      }));
+    });
+    RACES = all;
+    CITIES = cityIndex();
+    $("#cities").innerHTML = [...CITIES.values()].sort((a,b)=>a.nom.localeCompare(b.nom,"fr")).map(c=>`<option value="${esc(c.nom)}"></option>`).join("");
+    $("#bibCount").textContent = RACES.length;
+    const upd = META && META.maj ? new Date(META.maj).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"}) : "—";
+    $("#meta").innerHTML = `${RACES.length} courses · ${esc(META?.perimetre||"")}<br>Mise à jour : ${upd}`;
+    if (META?.sources) $("#foot").textContent = "Sources : " + META.sources.join(", ") + ".";
+    update();
+  }
+
+  bind();
+  $("#results").innerHTML = `<div class="state">Chargement des courses…</div>`;
+  (async () => {
+    try {
+      const r = await fetch("data/courses.json", {cache:"no-cache"});
+      if (!r.ok) throw new Error(r.status);
+      const data = await r.json();
+      ingest({docs:[
+        {id:"_meta", data:() => data.meta},
+        {id:"all", data:() => ({c:data.courses})}
+      ]});
+    } catch(e) {
+      $("#results").innerHTML = `<div class="state">Impossible de charger les courses. Recharge la page.</div>`;
+      $("#meta").textContent = "Données indisponibles";
+    }
+  })();
+})();
+</script>
+
+</body>
+</html>
